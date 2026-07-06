@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shayma's Adhkar | أذكار شيماء</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Default Morning Night */
+            --bg: #1A1F1B;
+            --card: #242B25;
+            --accent: #A7C4A0;
+            --text: #f1f5f9;
+        }
+
+        body { 
+            font-family: 'Quicksand', sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text);
+            transition: all 0.5s ease; 
+            overflow-x: hidden; 
+        }
+
+        .arabic-font { font-family: 'Amiri', serif; }
+        .glass-card { 
+            background-color: var(--card);
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .progress-ring { transition: stroke-dashoffset 0.4s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .sticky-nav { position: sticky; top: 0; z-index: 50; background-color: var(--bg); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .completion-bar { transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1); background-color: var(--accent); }
+        
+        /* Categories Tab styling */
+        .tab-btn { opacity: 0.5; transition: 0.3s; }
+        .tab-btn.active { opacity: 1; border-bottom: 2px solid var(--accent); color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // THEMES DATA
+        const THEMES = {
+            morning: {
+                night: { bg: '#1A1F1B', card: '#242B25', accent: '#A7C4A0', text: '#f1f5f9' },
+                day: { bg: '#F2F5F2', card: '#FFFFFF', accent: '#5E7D5E', text: '#1e293b' }
+            },
+            evening: {
+                night: { bg: '#1F1B1B', card: '#2B2424', accent: '#D4A5A5', text: '#f1f5f9' },
+                day: { bg: '#F9F2F2', card: '#FFFFFF', accent: '#A66D6D', text: '#1e293b' }
+            },
+            sleep: {
+                night: { bg: '#161821', card: '#1F2230', accent: '#A5ADCE', text: '#f1f5f9' },
+                day: { bg: '#F2F3F9', card: '#FFFFFF', accent: '#5D6B9E', text: '#1e293b' }
+            }
+        };
+
+        // ADHKAR DATABASE
+        const DATABASE = {
+            morning: Array.from({ length: 30 }, (_, i) => ({ 
+                id: `m${i}`, 
+                text: [
+                    "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ",
+                    "اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ",
+                    "أعوذ بالله من الشيطان الرجيم: اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ",
+                    "قُلْ هُوَ اللَّهُ أَحَدٌ (3 مرات)",
+                    "رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا"
+                ][i % 5] + (i > 4 ? ` (تكملة ورد الصباح ${i+1})` : ""),
+                count: [1, 1, 1, 3, 3][i % 5],
+                reward: "حفظ وكفاية من كل سوء"
+            })),
+            evening: Array.from({ length: 27 }, (_, i) => ({ 
+                id: `e${i}`, 
+                text: [
+                    "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ",
+                    "أَعُوذُ بِكَلِمَاتِ اللهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ",
+                    "اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ",
+                    "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ",
+                    "يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ"
+                ][i % 5] + (i > 4 ? ` (تكملة ورد المساء ${i+1})` : ""),
+                count: [1, 3, 1, 1, 1][i % 5],
+                reward: "سكينة وطمأنينة لليلتك"
+            })),
+            sleep: Array.from({ length: 16 }, (_, i) => ({ 
+                id: `s${i}`, 
+                text: [
+                    "بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي، وَبِكَ أَرْفَعُهُ",
+                    "اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ",
+                    "سُبْحَانَ اللَّهِ (33)، الْحَمْدُ لِلَّهِ (33)، اللَّهُ أَكْبَرُ (34)",
+                    "بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا",
+                    "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ"
+                ][i % 5] + (i > 4 ? ` (سنن النوم ${i+1})` : ""),
+                count: [1, 3, 1, 1, 1][i % 5],
+                reward: "حفظ من الشيطان حتى الصباح"
+            }))
+        };
+
+        const ZikrCard = ({ zikr, isDone, onIncrement }) => {
+            const [localCount, setLocalCount] = useState(zikr.count);
+            
+            // Sync with global "isDone" state on reset/reload
+            useEffect(() => {
+                if (isDone) setLocalCount(0);
+                else setLocalCount(zikr.count);
+            }, [isDone]);
+
+            const radius = 18;
+            const circum = 2 * Math.PI * radius;
+            const offset = isDone ? 0 : circum - ((zikr.count - localCount) / zikr.count) * circum;
+
+            const handleTap = () => {
+                if (!isDone && localCount > 0) {
+                    const next = localCount - 1;
+                    setLocalCount(next);
+                    if (next === 0) onIncrement(zikr.id);
+                    if (window.navigator.vibrate) window.navigator.vibrate(10);
+                }
+            };
+
+            return (
+                <div onClick={handleTap} className={`glass-card p-6 rounded-[28px] mb-4 cursor-pointer transition-all duration-500 ${isDone ? 'opacity-20 scale-95' : 'active:scale-95'}`}>
+                    <div className="flex justify-between items-center gap-6">
+                        <div className="relative w-12 h-12 flex-shrink-0">
+                            <svg className="w-full h-full">
+                                <circle cx="24" cy="24" r={radius} fill="transparent" stroke="rgba(128,128,128,0.1)" strokeWidth="3" />
+                                <circle cx="24" cy="24" r={radius} fill="transparent" stroke="var(--accent)" strokeWidth="3" strokeDasharray={circum} strokeDashoffset={offset} className="progress-ring" strokeLinecap="round" />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold" style={{color: 'var(--accent)'}}>{isDone ? '✓' : localCount}</span>
+                        </div>
+                        <p className="arabic-font text-xl text-right flex-1 leading-relaxed">{zikr.text}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [cat, setCat] = useState('morning');
+            const [mode, setMode] = useState(() => localStorage.getItem('s_mode') || 'night');
+            const [progress, setProgress] = useState(() => JSON.parse(localStorage.getItem('s_progress')) || {});
+
+            // Update CSS Variables when theme/mode changes
+            useEffect(() => {
+                const colors = THEMES[cat][mode];
+                const root = document.documentElement;
+                root.style.setProperty('--bg', colors.bg);
+                root.style.setProperty('--card', colors.card);
+                root.style.setProperty('--accent', colors.accent);
+                root.style.setProperty('--text', colors.text);
+                localStorage.setItem('s_mode', mode);
+            }, [cat, mode]);
+
+            useEffect(() => {
+                localStorage.setItem('s_progress', JSON.stringify(progress));
+                // Auto-Reset Logic if 100%
+                if (completionPercentage === 100) {
+                    setTimeout(() => handleReset(), 3000);
+                }
+            }, [progress]);
+
+            const completionPercentage = useMemo(() => {
+                const total = DATABASE[cat].length;
+                const done = DATABASE[cat].filter(z => progress[z.id]).length;
+                return Math.round((done / total) * 100);
+            }, [cat, progress]);
+
+            const handleIncrement = (id) => {
+                setProgress(prev => ({ ...prev, [id]: true }));
+            };
+
+            const handleReset = () => {
+                const newProgress = { ...progress };
+                DATABASE[cat].forEach(z => delete newProgress[z.id]);
+                setProgress(newProgress);
+            };
+
+            return (
+                <div className="min-h-screen">
+                    <header className="sticky-nav px-6 py-4">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="flex justify-between items-center mb-6">
+                                <button onClick={() => setMode(mode === 'night' ? 'day' : 'night')} className="text-2xl">
+                                    {mode === 'night' ? '🌙' : '☀️'}
+                                </button>
+                                <h1 className="text-lg font-bold tracking-widest uppercase">Shayma's Adhkar</h1>
+                                <button onClick={handleReset} className="text-[10px] uppercase font-bold opacity-50">Reset ↺</button>
+                            </div>
+                            <div className="flex justify-between items-end mb-2">
+                                <span className="text-[10px] uppercase tracking-widest opacity-50">{cat} progress</span>
+                                <span className="text-xl font-bold" style={{color: 'var(--accent)'}}>{completionPercentage}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-black/5 rounded-full overflow-hidden">
+                                <div className="h-full completion-bar" style={{ width: `${completionPercentage}%` }}></div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-2xl mx-auto p-6 md:p-10">
+                        <nav className="flex justify-center gap-10 mb-10 text-[11px] font-bold tracking-[0.2em] uppercase">
+                            {['morning', 'evening', 'sleep'].map(t => (
+                                <button key={t} onClick={() => setCat(t)} className={`tab-btn pb-2 ${cat === t ? 'active' : ''}`}>
+                                    {t === 'morning' ? 'صباح' : t === 'evening' ? 'مساء' : 'نوم'}
+                                </button>
+                            ))}
+                        </nav>
+
+                        <main className="space-y-2 pb-24">
+                            {DATABASE[cat].map(z => (
+                                <ZikrCard 
+                                    key={z.id + cat} 
+                                    zikr={z} 
+                                    isDone={!!progress[z.id]} 
+                                    onIncrement={handleIncrement} 
+                                />
+                            ))}
+                        </main>
+                    </div>
+
+                    {completionPercentage === 100 && (
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white text-black px-8 py-3 rounded-full shadow-2xl font-bold animate-bounce z-[100]">
+                            تم بنجاح! ✨
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
